@@ -1,6 +1,6 @@
-Building the “Telex Cultural Coworker”: My Journey into A2A Agent Integration with Telex.im
+# Building the “Telex Cultural Coworker”: My Journey into A2A Agent Integration with Telex.im
 
-Introduction
+## Introduction
 
 As part of the HNG Internship Stage 3, we were tasked with building an AI Agent that connects to Telex.im using the Agent-to-Agent (A2A) communication protocol.
 
@@ -16,7 +16,7 @@ Returns structured, AI-generated responses
 
 Demonstrates creativity, clean code, and strong integration quality
 
-⚙️ Tech Stack
+## ⚙️ Tech Stack
 
 I used a modern, developer-friendly stack that balances performance and simplicity:
 
@@ -49,7 +49,7 @@ Travel recommendations
 
 It’s like having a digital cultural advisor available through Telex chat.
 
-🧩 Understanding the A2A Protocol
+## 🧩 Understanding the A2A Protocol
 
 The A2A (Agent-to-Agent) protocol defines how agents communicate within Telex.im.
 It expects:
@@ -61,6 +61,7 @@ A POST endpoint that accepts JSON-RPC style requests (e.g., {"jsonrpc": "2.0", "
 A structured response containing insights or actions.
 
 Here’s an example of a valid A2A request:
+```
 
 {
   "jsonrpc": "2.0",
@@ -69,9 +70,9 @@ Here’s an example of a valid A2A request:
   "data": { "location": "Japan" }
 }
 
-
+```
 And the expected response looks like this:
-
+```
 {
   "active": true,
   "category": "Cultural Insights and Marketing",
@@ -87,7 +88,7 @@ And the expected response looks like this:
   }
 }
 
-
+```
 This means that every request from Telex.im can automatically understand and render the response.
 
 🧑‍💻 Building the Agent

@@ -1,37 +1,43 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from app.services.gemini_service import get_cultural_insights
 from app.models.schemas import InsightResponse
 from app.config import logger
 
-# Initialize the APIRouter
 router = APIRouter()
 
+
 @router.get("/insights", response_model=InsightResponse)
-def get_insight(location: str):
+async def get_insight(location: str):
     """
-    Retrieves cultural insights for a specified location using the Gemini service.
-    
+    Retrieves structured cultural insights for a given location
+    using the Gemini 2.5 Flash API.
+
     Args:
-        location: The geographic location (city, country) to get insights for.
-    
+        location (str): The city or country to get insights for.
+
     Returns:
-        A JSON response containing the location and the generated insights.
+        JSONResponse: A structured dictionary containing cultural,
+        social, and marketing insights.
     """
     logger.info(f"API Call: Retrieving insights for location: {location}")
-    
-    # get_cultural_insights is designed to be synchronous, so no 'await' is needed.
-    result = get_cultural_insights(location)
-    
-    # Prepare the response structure. The replace operation helps ensure 
-    # markdown formatting from the LLM looks correct in various clients.
-    formatted_result = {
-        "status": "success",
-        "response": {
-            "location": location,
-            "insights": result.replace("\\n", "\n\n")
-        }
-    }
 
-    # Return the formatted response, which FastAPI will validate against InsightResponse
-    return JSONResponse(content=formatted_result)
+    try:
+        # Fetch structured AI insights (dict)
+        insights = await get_cultural_insights(location)
+
+        # Build final response format
+        formatted_result = {
+            "status": "success",
+            "location": location,
+            "insights": insights
+        }
+
+        return JSONResponse(content=formatted_result, status_code=200)
+
+    except Exception as e:
+        logger.error(f"Error retrieving insights for {location}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal Server Error while retrieving insights for {location}"
+        )

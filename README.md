@@ -17,26 +17,26 @@ The API integrates with Redis for caching responses and delivers well-structured
 ---
 
 ## 🧩 Project Structure
-app/  
-├── pycache/ # Compiled Python cache files  
+app/
+├── __init__.py  
+├── config.py                # App configuration and environment variables  
+├── main.py                  # FastAPI app entry point  
+│  
+├── models/  
+│   ├── __init__.py  
+│   └── schemas.py           # Pydantic request/response models  
+│  
+├── routes/  
+│   ├── __init__.py  
+│   ├── cultural_agent.py    # /api/v1/insights endpoint  
+│   └── telex_webhook.py     # /api/v1/a2a/telex-cultural (Telex integration)  
 │
-├── models/ # Data models (schemas and validation)  
-│ ├── init.py  
-│ └── schemas.py # Defines request/response Pydantic schemas  
-│  
-├── routes/ # Application endpoints      
-│ ├── init.py  
-│ ├── cultural_agent.py # Route for cultural insights endpoint  
-│ └── telex_webhook.py # Route for Telex webhook integration  
-│  
-├── services/ # Business logic and integrations  
-│ ├── init.py  
-│ ├── cache_service.py # Redis caching and retrieval logic  
-│ ├── gemini_service.py # Handles communication with Gemini API  
-│ ├── config.py # Environment variable and app config  
-│ └── main.py # FastAPI app instance and route mounting  
-│  
-└── telex_venv/ # Local Python virtual environment  
+├── services/  
+│   ├── __init__.py  
+│   ├── gemini_service.py    # Gemini API communication logic  
+│   └── cache_service.py     # (Optional) Redis caching module  
+│
+└── telex_venv/              # Local virtual environment (ignored in git)  
 
 
 ## ⚙️ Installation and Setup
@@ -61,6 +61,10 @@ pip install -r requirements.txt
 ## Configure Environment Variables
 ```
 GEMINI_API_KEY=your_gemini_api_key_here
+AGENT_DOMAIN=https://telex-cultural-coworker-production.up.railway.app
+AGENT_ID=telex-cultural-agent
+AGENT_NAME=Telex Cultural Coworker
+AGENT_DESCRIPTION=AI agent providing cultural insights globally
 REDIS_URL=redis://localhost:6379
 ```
 
@@ -80,47 +84,59 @@ uvicorn app.main:app --reload
 
 
 ---
+## Core Functionalities
+| Feature                | Description                                                    |
+| ---------------------- | -------------------------------------------------------------- |
+| **Cultural Insights**  | Retrieves AI-generated cultural summaries and etiquette tips   |
+| **Gemini Integration** | Uses Google’s Gemini model for contextual and accurate outputs |
+| **Telex A2A Protocol** | Provides structured JSON responses compatible with Telex.im    |
+| **FastAPI Framework**  | Handles routing and high-performance API responses             |
+| **Logging**            | Provides detailed logs for monitoring and debugging            |
 
-## ⚙️ Core Functionalities
 
-- **FastAPI Framework**: Handles HTTP requests and routing.
-- **Gemini API Integration**: Provides AI-generated cultural insights.
-- **Redis Cache Layer**: Optimizes performance by caching frequent queries.
-- **Telex Webhook**: Enables communication with Telex platform.
-- **Environment Configuration**: Managed via `.env` and `config.py`.
+## 🧩 Key API Endpoints
 
----
+| Endpoint                          | Method | Description                                              |
+| --------------------------------- | ------ | -------------------------------------------------------- |
+| `/api/v1/health`                  | GET    | Health check endpoint                                    |
+| `/api/v1/insights?location=Japan` | GET    | Fetch insights for a given location                      |
+| `/api/v1/a2a/telex-cultural`      | POST   | A2A endpoint used by Telex.im to fetch cultural insights |
+| `/.well-known/agent.json`         | GET    | Agent card definition for Telex discovery                |
 
-## 🧩 Key Files and Responsibilities
-
-| File | Description |
-|------|--------------|
-| `cultural_agent.py` | Endpoint that generates cultural insights for requested locations. |
-| `telex_webhook.py` | Endpoint to receive and respond to Telex webhook requests. |
-| `gemini_service.py` | Manages requests and responses to/from Google Gemini AI. |
-| `cache_service.py` | Stores and retrieves data using Redis caching. |
-| `config.py` | Loads environment variables and config settings. |
-| `main.py` | Initializes the FastAPI app and includes route registration. |
-| `schemas.py` | Defines Pydantic models for request and response validation. |
-| `run.sh` | Bash script for starting/stopping the FastAPI server. |
-
----
 
 ## 🧰 Tech Stack
 
-| Category | Tools Used |
-|-----------|-------------|
-| **Framework** | FastAPI |
-| **AI Integration** | Google Gemini API |
-| **Cache Database** | Redis |
-| **Language** | Python 3.x |
-| **Environment Management** | python-dotenv |
-| **Deployment** | Uvicorn |
-| **Package Management** | pip, npm (optional) |
+| Category                   | Tools             |
+| -------------------------- | ----------------- |
+| **Framework**              | FastAPI           |
+| **AI Engine**              | Google Gemini API |
+| **Language**               | Python 3.12       |
+| **Environment Management** | python-dotenv     |
+| **Logging**                | Python Logging    |
+| **Deployment**             | Railway (Uvicorn) |
+
 
 ---
 
 ## 🧾 Environment Variables (.env)
+| Variable            | Description                                    |
+| ------------------- | ---------------------------------------------- |
+| `GEMINI_API_KEY`    | Your Gemini API key from Google AI Studio      |
+| `AGENT_DOMAIN`      | Public domain of your deployed agent           |
+| `AGENT_ID`          | Unique identifier for your Telex agent         |
+| `AGENT_NAME`        | Display name of your AI agent                  |
+| `AGENT_DESCRIPTION` | Description of your agent for Telex registry   |
+| `REDIS_URL`         | Redis connection string (optional for caching) |
+
+
+## Troubleshooting
+
+| Issue                             | Cause                        | Fix                                       |
+| --------------------------------- | ---------------------------- | ----------------------------------------- |
+| **"API key missing" in insights** | Railway not loading `.env`   | Add `GEMINI_API_KEY` in Railway Variables |
+| **500 Internal Server Error**     | Gemini API unavailable       | Check logs in Railway and verify API key  |
+| **Redis connection error**        | Redis not running            | Start Redis or disable caching in code    |
+| **Indent error in JSONResponse**  | `indent` argument deprecated | Removed in final version ✅                |
 
 
 
@@ -143,47 +159,70 @@ pydantic
 #### Query Parameter:
 
 - location (string): The name of the country or region you want insights for.
-#### Example Request:
+#### Example Requests
+#### Get Cultural Insights (Direct)
 ```
-GET http://127.0.0.1:8000/api/v1/insights?location=Japan
+GET https://telex-cultural-coworker-production.up.railway.app/api/v1/insights?location=Kenya
 ```
 #### Example Response:
 ```
 {
-  "location": "Japan",
-  "insight": "Japan is a country with a rich cultural heritage, blending ancient traditions with modern innovation..."
+  "status": "success",
+  "response": {
+    "location": "Kenya",
+    "insights": {
+      "culture": "Kenyan culture emphasizes community, hospitality, and respect for elders.",
+      "food_and_cuisine": "Staple foods include ugali, sukuma wiki, and nyama choma.",
+      "business_etiquette": "Punctuality and professional dress are important in meetings."
+    }
+  }
 }
 ```
 
-| Component               | Description                            |
-| ----------------------- | -------------------------------------- |
-| **FastAPI**             | Web framework powering the API         |
-| **Gemini API**          | Generates cultural insights            |
-| **Redis**               | Stores cached responses for efficiency |
-| **Pydantic (Optional)** | Defines structured API response models |
-| **Logging**             | Tracks API requests and errors         |
+#### Telex A2A Integration (POST)
+```
+POST https://telex-cultural-coworker-production.up.railway.app/api/v1/a2a/telex-cultural
+```
 
+#### Body:
+```
+{
+  "jsonrpc": "2.0",
+  "id": "test-001",
+  "method": "cultural_insights",
+  "data": {
+    "location": "USA"
+  }
+}
+```
 
-## Development Notes
-
-- The API automatically connects to Redis at startup.
-
-- If Gemini API or Redis connection fails, errors are logged gracefully.
-
-- Responses are returned using FastAPI’s JSONResponse.
-
-- Removed unsupported argument indent from JSONResponse() to ensure compatibility with latest FastAPI versions.
-
-## Troubleshooting
-| Issue                                                                            | Possible Fix                                                            |
-| -------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `TypeError: JSONResponse.__init__() got an unexpected keyword argument 'indent'` | Remove the `indent` argument from the `JSONResponse()` call.            |
-| Redis not connecting                                                             | Ensure Redis server is running and `.env` contains correct `REDIS_URL`. |
-| 500 Internal Server Error                                                        | Check logs for Gemini API response issues or network errors.            |
+#### Response Example:
+```
+{
+  "active": true,
+  "category": "Cultural Insights and Marketing",
+  "id": "telex-cultural-agent",
+  "name": "Telex Cultural Coworker",
+  "short_description": "AI cultural coworker providing insights across countries.",
+  "timestamp": "2025-11-03T19:43:04.762602Z",
+  "response": {
+    "status": "success",
+    "location": "USA",
+    "insights": {
+      "culture": "American culture values individuality, freedom, and innovation.",
+      "communication_style": "Direct and open communication is appreciated.",
+      "business_etiquette": "Be punctual and confident in presentations.",
+      "food_and_cuisine": "Diverse regional cuisines such as BBQ, Cajun, and Tex-Mex.",
+      "marketing_tips": "Emphasize authenticity and innovation in campaigns."
+    }
+  }
+}
+```
 
 
 🧑‍💻 Author
 
 Developed by: Aghaulor Gift  
 Email: [Email](aghaulor.gift@gmail.com)  
-GitHub: [Github Link](https://github.com/Aghaulor-Gift)
+GitHub: [Github Link](https://github.com/Aghaulor-Gift)  
+Deployed on: [Railway](https://telex-cultural-coworker-production.up.railway.app)

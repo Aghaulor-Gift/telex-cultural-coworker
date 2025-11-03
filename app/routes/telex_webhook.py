@@ -1,117 +1,120 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
+from app.models.schemas import A2ARequest
 from app.services.gemini_service import get_cultural_insights
 from app.config import logger, AGENT_ID, AGENT_NAME, AGENT_DESCRIPTION, AGENT_DOMAIN
-from app.models.schemas import A2ARequest
 from datetime import datetime
 
 router = APIRouter()
-A2A_WEBHOOK_PATH = "/a2a/telex-cultural"
+A2A_PATH = "/a2a/telex-cultural"
 
-# --- 1. AGENT CARD ENDPOINT ---
+# --- 1️⃣ AGENT CARD ENDPOINT ---
 @router.get("/.well-known/agent.json", include_in_schema=False)
 def get_agent_card():
-    """Serves the Agent-to-Agent (A2A) definition for Telex."""
-    logger.info(f"Serving Agent Card for ID: {AGENT_ID}")
-
-    webhook_url = f"{AGENT_DOMAIN}{A2A_WEBHOOK_PATH}"
+    """
+    Returns metadata describing the Telex Cultural Coworker Agent.
+    """
+    webhook_url = f"{AGENT_DOMAIN}/api/v1{A2A_PATH}"
 
     agent_card = {
+        "active": True,
+        "category": "Cultural Insights and Marketing",
+        "description": "An AI agent that provides real-time cultural insights for global engagement and marketing.",
         "id": AGENT_ID,
         "name": AGENT_NAME,
-        "description": AGENT_DESCRIPTION,
-        "schemaVersion": "0.1.0",
-        "methods": [
+        "long_description": (
+            "The Telex Cultural Coworker Agent delivers AI-powered insights about cultures worldwide — "
+            "including etiquette, cuisine, lifestyle, and business norms. It helps organizations, creators, "
+            "and travelers understand global diversity.\n\n"
+            "Features:\n"
+            "- Analyze cultural behavior and etiquette\n"
+            "- Suggest marketing and engagement strategies\n"
+            "- Recommend food, festivals, and travel highlights\n\n"
+            "Built with FastAPI and Gemini 2.5 Flash, designed for seamless Telex.im A2A integration."
+        ),
+        "short_description": "AI cultural insight and marketing coworker",
+        "nodes": [
             {
-                "name": "cultural_insights",
-                "description": "Retrieves real-time cultural, etiquette, and trend insights for a specific location.",
-                "parameters": {
-                    "location": {
-                        "type": "string",
-                        "description": "The city or country to get insights for (e.g., 'Tokyo', 'Brazil')."
-                    }
-                },
-                "response": {
-                    "type": "object",
-                    "properties": {
-                        "insights": {
-                            "type": "string",
-                            "description": "Markdown or structured JSON text with cultural summary, cuisine, and travel recommendations."
-                        }
-                    }
-                },
-                "url": "hhtps://telex-cultural-coworker-production.up.railway.app/a2a/telex-cultural",
+                "id": "cultural_agent",
+                "name": "Cultural Insight Agent",
+                "parameters": {},
+                "position": [700, -120],
+                "type": "a2a/generic-a2a-node",
+                "typeVersion": 1,
+                "url": webhook_url
             }
         ],
-        "defaultMethod": "cultural_insights"
+        "pinData": {},
+        "settings": {
+            "executionOrder": "v1"
+        },
+        "timestamp": datetime.utcnow().isoformat() + "Z"
     }
 
+    logger.info("Serving Telex Agent Definition (Agent Card).")
     return JSONResponse(content=agent_card)
 
 
-# --- 2. MAIN A2A WEBHOOK ENDPOINT ---
-@router.post(A2A_WEBHOOK_PATH, include_in_schema=False)
+# --- 2️⃣ MAIN WEBHOOK ENDPOINT ---
+@router.post(A2A_PATH, include_in_schema=False)
 async def telex_webhook(request: A2ARequest):
     """
-    Handles A2A JSON-RPC 'invoke' requests from Telex.im and returns
-    structured, AI-enhanced cultural insights.
+    Handles A2A JSON-RPC invoke requests and returns structured cultural insights.
     """
     try:
+        # Validate method
         if request.method != "cultural_insights":
-            raise ValueError("Unsupported method. Must be 'cultural_insights'.")
+            return JSONResponse(
+                content={"error": "Unsupported method. Must be 'cultural_insights'."},
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
 
         location = getattr(request.data, "location", None)
         if not location:
-            raise ValueError("Missing 'location' parameter in data payload.")
+            return JSONResponse(
+                content={"error": "Missing 'location' parameter."},
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
 
-        logger.info(f"Received A2A request for location: {location}")
+        logger.info(f"Processing A2A request for location: {location}")
 
-        # --- Default Base Insights ---
-        insights = {
-            "culture": f"{location} has a rich cultural identity emphasizing respect, tradition, and community harmony.",
-            "communication_style": f"People in {location} communicate politely and prefer indirect expression to maintain harmony.",
-            "business_etiquette": f"In {location}, punctuality, formality, and respect for hierarchy are vital in business settings.",
-            "food_and_cuisine": f"{location}'s cuisine is diverse, flavorful, and often tied to seasonal and regional ingredients.",
-            "lifestyle_and_customs": f"The lifestyle in {location} balances work, family, and leisure with an emphasis on social unity.",
-            "dress_code": f"Typical dress in {location} reflects modesty and professionalism, depending on the occasion.",
-            "marketing_tips": f"To market effectively in {location}, emphasize authenticity, community values, and cultural respect.",
-            "travel_recommendations": f"Explore popular landmarks and cultural districts in {location} to understand its living heritage.",
-            "festivals_and_celebrations": f"{location} hosts colorful festivals that showcase its history, music, and culinary traditions."
-        }
+        # --- Get AI insights from Gemini ---
+        insights = await get_cultural_insights(location)
 
-        # --- Gemini AI Enrichment ---
-        try:
-            ai_generated = await get_cultural_insights(location)
-            if isinstance(ai_generated, dict):
-                insights.update(ai_generated)
-        except Exception as ai_err:
-            logger.warning(f"Gemini API unavailable or failed: {ai_err}")
-
-        # --- Full Telex Agent Response ---
+        # --- Response payload (formatted like your example) ---
         response_payload = {
             "active": True,
             "category": "Cultural Insights and Marketing",
-            "description": "A workflow for retrieving AI-generated cultural insights for global markets.",
+            "description": "An AI agent that provides real-time cultural insights for global engagement and marketing.",
             "id": AGENT_ID,
-            "name": AGENT_NAME,
-            "short_description": "An AI agent that delivers cultural insights for global engagement.",
+            "name": "Telex Cultural Coworker",
+            "long_description": (
+                "An AI-powered agent that provides cultural insights, etiquette, lifestyle tips, "
+                "and marketing recommendations for any country or region."
+            ),
+            "short_description": "AI cultural coworker providing insights across countries.",
+            "nodes": [
+                {
+                    "id": "cultural_agent",
+                    "name": "Cultural Insight Agent",
+                    "parameters": {},
+                    "position": [700, -120],
+                    "type": "a2a/generic-a2a-node",
+                    "typeVersion": 1,
+                    "url": f"{AGENT_DOMAIN}/api/v1{A2A_PATH}"
+                }
+            ],
+            "pinData": {},
+            "settings": {"executionOrder": "v1"},
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "response": {
                 "status": "success",
                 "location": location,
                 "insights": insights
-            },
+            }
         }
 
-        logger.info(f"Successfully generated insights for: {location}")
         return JSONResponse(content=response_payload, status_code=status.HTTP_200_OK)
-
-    except ValueError as ve:
-        logger.warning(f"A2A Request Validation Error: {ve}")
-        return JSONResponse(
-            content={"error": str(ve)},
-            status_code=status.HTTP_400_BAD_REQUEST
-        )
 
     except Exception as e:
         logger.error(f"A2A Webhook Internal Error: {e}")

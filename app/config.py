@@ -1,30 +1,24 @@
 import os
 import logging
-import redis
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
-# Gemini API Key
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
-# Redis connection
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
-
-# Logger setup
-logger = logging.getLogger("telex-cultural-coworker")
+# Basic Logger setup
+logger = logging.getLogger("telex_cultural_agent")
 logger.setLevel(logging.INFO)
-handler = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s - %(message)s")
-handler.setFormatter(formatter)
-logger.addHandler(handler)
 
-# Redis client
-try:
-    redis_client = redis.from_url(REDIS_URL)
-    redis_client.ping()
-    logger.info("Connected to Redis successfully.")
-except redis.exceptions.ConnectionError:
-    logger.error("Failed to connect to Redis.")
-    redis_client = None
+# Console handler for Railway logs
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+logger.addHandler(console_handler)
+
+# Agent Metadata
+AGENT_ID = os.getenv("AGENT_ID", "telex-cultural-agent")
+AGENT_NAME = os.getenv("AGENT_NAME", "Telex Cultural Coworker")
+AGENT_DESCRIPTION = os.getenv("AGENT_DESCRIPTION", "AI-powered cultural coworker that gives location-based insights.")
+AGENT_DOMAIN = os.getenv("AGENT_DOMAIN", "https://telex-cultural-coworker-production.up.railway.app")
+
+# Gemini
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")

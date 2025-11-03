@@ -1,0 +1,10 @@
+# Python
+__pycache__/
+*.pyc
+
+# Environment
+.env
+telex_venv/
+
+# VSCode
+.vscode/

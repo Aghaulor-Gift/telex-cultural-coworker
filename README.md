@@ -224,5 +224,5 @@ POST https://telex-cultural-coworker-production.up.railway.app/api/v1/a2a/telex-
 
 Developed by: Aghaulor Gift  
 Email: [Email](aghaulor.gift@gmail.com)  
-GitHub: [Github Link](https://github.com/Aghaulor-Gift)  
+GitHub: [Github Link](https://github.com/Aghaulor-Gift/telex-cultural-coworker)  
 Deployed on: [Railway](https://telex-cultural-coworker-production.up.railway.app)

@@ -211,12 +211,11 @@ Then Railway handled the rest — the app went live at
 -- Logging and error handling made debugging easy.
 
 ## ⚠️ What Didn’t (and How I Fixed It)
-|Issue|Cause	|Fix|
-|-------------------|
+|Issue| Cause	|Fix|
+|------|------|-------|
 |"API key missing" |in production	Railway doesn’t auto-load .env	|Added GEMINI_API_KEY via Railway Variables|  
 |JSONResponse indent error|	FastAPI deprecated indent argument|	Removed it
-500 errors from Gemini|  
-|Missing async handling	Switched to await for async HTTP calls|
+500 errors from Gemini|Missing async handling	|Switched to await for async HTTP calls|
 |Request validation errors	|Missing JSON-RPC fields	|Added proper A2ARequest Pydantic model|
 
 ## Lessons Learned
@@ -280,6 +279,6 @@ GitHub: [Github link](https://github.com/Aghaulor-Gift/telex-cultural-coworker)
 
 Telex Agent: Telex Cultural Coworker
 
-Tags: #HNGInternship #TelexIm #AI #FastAPI #GeminiAPI
+Tags: [#HNGInternship](https://hng.tech/) [#TelexIm](https://telex.im/) [#AI]() [#FastAPI](https://fastapi.tiangolo.com/#requirements) [#GeminiAPI](https://gemini.google.com/)
 
 

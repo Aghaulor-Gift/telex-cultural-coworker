@@ -135,34 +135,36 @@ async def telex_webhook(request: Request):
         push_token = push_config.get("token")
 
         if push_url and push_token:
-            logger.info(f"Pushing insights back to Telex for {location}...")
-            try:
-                async with httpx.AsyncClient() as client:
-                    await client.post(
-                        push_url,
-                        headers={"Authorization": f"Bearer {push_token}"},
-                        json={
-                            "kind": "message",
-                            "role": "assistant",
-                            "parts": [
-                                {
-                                    "kind": "text",
-                                    "text": (
-                                        f"🌍 **Cultural Insights for {location}:**\n\n"
-                                        f"**Culture:** {insights['culture']}\n\n"
-                                        f"**Communication Style:** {insights['communication_style']}\n\n"
-                                        f"**Business Etiquette:** {insights['business_etiquette']}\n\n"
-                                        f"**Food & Cuisine:** {insights['food_and_cuisine']}\n\n"
-                                        f"**Festivals & Celebrations:** {insights['festivals_and_celebrations']}\n\n"
-                                        f"✨ *Powered by Telex Cultural Coworker*"
-                                    ),
-                                }
-                            ],
-                        },
-                    )
-                logger.info(f"Successfully pushed insights for {location} to Telex UI.")
-            except Exception as push_err:
-                logger.error(f"Failed to push response to Telex: {push_err}")
+    logger.info(f"Pushing insights back to Telex for {location}...")
+    try:
+        async with httpx.AsyncClient() as client:
+            await client.post(
+                push_url,
+                headers={"Authorization": f"Bearer {push_token}"},
+                json={
+                    "kind": "message",
+                    "role": "assistant",
+                    "parts": [
+                        {
+                            "kind": "text",
+                            "text": (
+                                f"🌍 **Cultural Insights for {location}:**\n\n"
+                                f"**Culture:** {insights.get('culture', 'N/A')}\n\n"
+                                f"**Communication Style:** {insights.get('communication_style', 'N/A')}\n\n"
+                                f"**Business Etiquette:** {insights.get('business_etiquette', 'N/A')}\n\n"
+                                f"**Food & Cuisine:** {insights.get('food_and_cuisine', 'N/A')}\n\n"
+                                f"**Lifestyle & Customs:** {insights.get('lifestyle_and_customs', 'N/A')}\n\n"
+                                f"**Festivals & Celebrations:** {insights.get('festivals_and_celebrations', 'N/A')}\n\n"
+                                f"✨ *Powered by Telex Cultural Coworker*"
+                            ),
+                        }
+                    ],
+                },
+            )
+        logger.info(f"Successfully pushed insights for {location} to Telex UI.")
+    except Exception as push_err:
+        logger.error(f"Failed to push response to Telex: {push_err}")
+
 
         # --- Step 5: Return success response to Telex backend ---
         return JSONResponse(content=response_payload, status_code=status.HTTP_200_OK)

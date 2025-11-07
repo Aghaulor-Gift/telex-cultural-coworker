@@ -8,7 +8,6 @@ router = APIRouter()
 A2A_PATH = "/a2a/telex-cultural"
 
 
-# --- 1️⃣ AGENT CARD ENDPOINT ---
 @router.get("/.well-known/agent.json", include_in_schema=False)
 def get_agent_card():
     """Returns metadata describing the Telex Cultural Coworker Agent."""
@@ -51,33 +50,23 @@ def get_agent_card():
     return JSONResponse(content=agent_card)
 
 
-# --- 2️⃣ MAIN WEBHOOK ENDPOINT (FLEXIBLE HANDLER) ---
 @router.post(A2A_PATH, include_in_schema=False)
 async def telex_webhook(request: Request):
     """
-    Handles Telex webhook requests — supports both A2A JSON-RPC and simplified payloads.
+    Handles Telex webhook requests — supports A2A JSON-RPC, params, and simplified payloads.
     """
     try:
-        try:
-            body = await request.json()
-        except Exception:
-            logger.warning("Invalid JSON body received.")
-            return JSONResponse(
-                content={"error": "Invalid JSON format."},
-                status_code=status.HTTP_400_BAD_REQUEST
-            )
+        body = await request.json()
+        logger.info(f"Incoming payload: {body}")
 
-        # --- Detect payload format ---
+        # Detect A2A format
         is_a2a_format = "jsonrpc" in body or "method" in body
 
-        jsonrpc = body.get("jsonrpc", "2.0")
-        req_id = body.get("id", "auto-generated-id")
-        method = str(body.get("method", "cultural_insights")).strip().lower()
-
-        # Accept both A2A and simplified inputs
+        # Extract location flexibly
         location = (
             body.get("location") or
             body.get("data", {}).get("location") or
+            body.get("params", {}).get("location") or
             None
         )
 
@@ -88,40 +77,32 @@ async def telex_webhook(request: Request):
                 status_code=status.HTTP_400_BAD_REQUEST
             )
 
-        # Log format type
-        if is_a2a_format:
-            logger.info(f"Received A2A-compliant request for location: {location}")
-        else:
-            logger.info(f"Received simple JSON request for location: {location}")
+        logger.info(f"Received request for location: {location}")
 
-        # --- Fetch AI insights from Gemini ---
+        # Get insights
         try:
             insights = await get_cultural_insights(location)
         except Exception as e:
-            logger.warning(f"Gemini service failed; using fallback. Error: {e}")
+            logger.warning(f"Gemini service failed, using fallback. Error: {e}")
             insights = {
-                "culture": f"{location} is known for its rich traditions and diverse cultural values.",
-                "communication_style": f"People in {location} often communicate with politeness and respect.",
-                "business_etiquette": f"In {location}, punctuality and formality are valued in business meetings.",
-                "food_and_cuisine": f"{location} offers a diverse range of traditional and modern cuisine.",
-                "lifestyle_and_customs": f"The lifestyle in {location} reflects a balance between family, work, and community.",
-                "dress_code": f"People in {location} dress appropriately for the occasion, respecting local norms.",
-                "marketing_tips": f"When marketing in {location}, emphasize trust, authenticity, and community connection.",
-                "travel_recommendations": f"Explore landmarks, markets, and cultural festivals to experience {location}.",
-                "festivals_and_celebrations": f"{location} celebrates colorful festivals that highlight its identity."
+                "culture": f"{location} has a diverse and deeply rooted cultural identity.",
+                "communication_style": f"People in {location} often communicate politely and respectfully.",
+                "business_etiquette": f"In {location}, punctuality and courtesy are highly valued.",
+                "food_and_cuisine": f"{location} offers a mix of traditional and modern cuisines.",
+                "lifestyle_and_customs": f"The lifestyle in {location} reflects community, family, and tradition.",
+                "dress_code": f"Attire in {location} varies by occasion, reflecting respect and modesty.",
+                "marketing_tips": f"Effective marketing in {location} focuses on authenticity and community ties.",
+                "travel_recommendations": f"Explore landmarks, nature, and festivals to experience {location}.",
+                "festivals_and_celebrations": f"{location} celebrates many vibrant festivals throughout the year."
             }
 
-        # --- Structured response payload ---
+        # Build response
         response_payload = {
             "active": True,
             "category": "Cultural Insights and Marketing",
             "description": AGENT_DESCRIPTION,
             "id": AGENT_ID,
             "name": AGENT_NAME,
-            "long_description": (
-                "An AI-powered agent that provides cultural insights, etiquette, lifestyle tips, "
-                "and marketing recommendations for any country or region."
-            ),
             "short_description": "AI cultural coworker providing insights across countries.",
             "nodes": [
                 {
